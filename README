@@ -1,1 +1,4 @@
-Code associated with Kuthyar Giardia-gut bacteria project
+Code associated with habitat-Giardia-gut bacteria project
+Description: These files will allow you to replicate the analyses we used to assess the impact of habitat disturbance and Giardia infection on the A. caraya gut microbiome. There is a file for 16S rRNA gene amplicon data (QIIME2_code) and a file for R analyses (R_code). Metadata files can be found at doi:10.5061/dryad.wm37pvmj5 on Dryad.
+Contributors: Sahana Kuthyar, Elizabeth Mallott, Thomas Gillespie, and Katherine Amato
+doi: upon publication
