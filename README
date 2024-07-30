@@ -3,3 +3,4 @@ This repository includes code associated with Effects of anthropogenic habitat d
 Description: These files will allow you to replicate the analyses we used to assess the impact of habitat disturbance and Giardia infection on the A. caraya gut microbiome. 
 There is a file for analyzing 16S rRNA gene amplicon data through QIIME2 and a file for subsequent statistical analyses in R. Metadata files can be found at doi:10.5061/dryad.wm37pvmj5 on Dryad.
 
+** Disregard the two .docx files **
