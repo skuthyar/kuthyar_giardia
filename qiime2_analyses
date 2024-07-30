@@ -1,0 +1,42 @@
+# Import and summarize data
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime tools import --type 'SampleData[PairedEndSequencesWithQuality]' --input-path /projects/p30050/skuthyar/AcarayaProjectNewVersion/howlermanifest.csv --output-path /projects/p30050/skuthyar/AcarayaProjectNewVersion/paired-end-demux.qza --input-format PairedEndFastqManifestPhred33
+
+# dada2 
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime dada2 denoise-paired --i-demultiplexed-seqs /projects/p30050/skuthyar/AcarayaProjectNewVersion/paired-end-demux.qza --p-trunc-len-f 290 --p-trunc-len-r 290 --p-trim-left-f 20 --p-trim-left-r 20 --p-max-ee 5 --p-n-threads 8 --o-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/table-ee5.qza --o-representative-sequences /projects/p30050/skuthyar/AcarayaProjectNewVersion/rep-seqs-ee5.qza --o-denoising-stats /projects/p30050/skuthyar/AcarayaProjectNewVersion/dada2denoising-stats-ee5.qza
+
+# Summarize reads
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime metadata tabulate --m-input-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/dada2denoising-stats-ee5.qza --o-visualization /projects/p30050/skuthyar/AcarayaProjectNewVersion/dada2denoising-stats-ee5.qzv
+
+# Assign phylogeny
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime phylogeny align-to-tree-mafft-fasttree --i-sequences /projects/p30050/skuthyar/AcarayaProjectNewVersion/rep-seqs-ee5.qza --o-alignment /projects/p30050/skuthyar/AcarayaProjectNewVersion/aligned-rep-seqs.qza --o-masked-alignment /projects/p30050/skuthyar/AcarayaProjectNewVersion/masked-aligned-rep-seqs.qza --o-tree /projects/p30050/skuthyar/AcarayaProjectNewVersion/unrooted-tree.qza --o-rooted-tree /projects/p30050/skuthyar/AcarayaProjectNewVersion/rooted-tree.qza
+
+# Assign taxonomy using Greengenes classifier
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime feature-classifier classify-sklearn --i-classifier /projects/b1057/gg-13-8-99-nb-classifier-qiime2019-4.qza --i-reads /projects/p30050/skuthyar/AcarayaProjectNewVersion/rep-seqs-ee5.qza --o-classification /projects/p30050/skuthyar/AcarayaProjectNewVersion/taxonomy.qza
+
+# Filter out chloroplasts and mitochondria
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime taxa filter-table --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/table-ee5.qza --i-taxonomy /projects/p30050/skuthyar/AcarayaProjectNewVersion/taxonomy.qza --p-exclude mitochondria,chloroplast --o-filtered-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/nomito-nochloro-filtered-table.qza
+
+# Estimate alpha diversity with rarefaction at 8000 reads
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime diversity core-metrics-phylogenetic --i-phylogeny /projects/p30050/skuthyar/AcarayaProjectNewVersion/rooted-tree.qza --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/nomito-nochloro-filtered-table.qza --p-sampling-depth 8000 --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/metadata-allhowlers.txt --output-dir /projects/p30050/skuthyar/AcarayaProjectNewVersion/core-metrics-results-8000
+
+# Estimate beta diversity matrices
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime emperor plot --i-pcoa /projects/p30050/skuthyar/AcarayaProjectNewVersion/core-metrics-results-8000/weighted_unifrac_pcoa_results.qza --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/metadata-allhowlers.txt --o-visualization /projects/p30050/skuthyar/AcarayaProjectNewVersion/emperor_weighted_unifrac_pcoa_results.qzv
+
+# Filter table for Giardia samples
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime feature-table filter-samples --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/nomito-nochloro-filtered-table.qza --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/metadata-allhowlers.txt --p-where "giardiapresence='0' OR giardiapresence='1'" --o-filtered-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-filtered-table.qza
+
+# Filter out remote samples from table
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime feature-table filter-samples --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-filtered-table.qza --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/metadata-allhowlers.txt --p-where "year='2017'" --o-filtered-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-2017-filtered-table.qza
+
+# Filter table for rural samples
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime feature-table filter-samples --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-2017-filtered-table.qza --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-metadata.txt --p-where "humaninteraction='Rural'" --o-filtered-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-rural-filtered-table.qza
+
+# Filter table for village samples
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg qiime feature-table filter-samples --i-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-2017-filtered-table.qza --m-metadata-file /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-metadata.txt --p-where "humaninteraction='Village'" --o-filtered-table /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-village-filtered-table.qza
+
+# Merge taxonomy with feature table and convert to tsv
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg biom add-metadata -i /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia_exported_table/giardia-feature-table.biom -o /projects/p30050/skuthyar/AcarayaProjectNewVersion/giardia-feature-table-taxonomy.biom --observation-metadata-fp /projects/p30050/skuthyar/AcarayaProjectNewVersion/biom-taxonomy.tsv --sc-separated taxonomy
+
+singularity exec -B /projects/p30050 -B /projects/p30050/skuthyar/AcarayaProjectNewVersion -B /projects/b1057 /projects/b1057/qiime2-core-2019-4.simg biom convert -i giardia-feature-table-taxonomy.biom -o giardia-taxonomy-table-from-biom.txt --to-tsv --header-key taxonomy
+
+
